@@ -1,2 +1,2 @@
-(defpackage #:heroku-app-clozure-common-lisp
+(defpackage #:variatio
   (:use #:cl))
