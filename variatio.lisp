@@ -38,6 +38,7 @@
 
 (defun parse-input (input)
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
+  (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
 	:with durations
 	:for note :in (ppcre:split "\\s" input)
