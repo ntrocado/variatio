@@ -33,7 +33,6 @@
 
 (defun dots (dur n)
   (if (zerop n) dur
-      ;; (dots (+ dur (/ 1 (expt 2 n))) (1- n))
       (dots (+ dur (/ dur 2)) (1- n))))
 
 (defun parse-input (input)
@@ -144,7 +143,6 @@
 			  #+windows "C:/Users/trocado/Desktop/output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
-      ;; TODO criar ficheiro lilypond
       (format stream *test-score* (apply #'make-ly (multiple-value-list (parse-input input))))
       :close-stream
       (uiop:run-program (list *lilypond*
