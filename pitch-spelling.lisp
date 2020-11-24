@@ -6,7 +6,7 @@
   (find letter "abcdefg" :test 'char=))
 
 (deftype pitch-letter ()
-  `(and (standard-char)
+  `(and standard-char
 	(satisfies pitch-letter-p)))
 
 (defclass note ()
