@@ -1,5 +1,7 @@
 (in-package :variatio)
 
+;;; INPUT
+
 (defun char-pitch->value (pitch)
   "Parse the char PITCH, returning 0 for C, 2 for D, upto 11 for B."
   (case pitch
@@ -53,6 +55,19 @@
 			(or (first durations) 1))
 		    durations))
 	:finally (return (values (reverse midi) (reverse durations)))))
+
+;;; PROCESS
+
+(defun process (pitches durations)
+  (let ((op (alexandria:random-elt (list (list #'reverse-pitches (list pitches durations))
+					 (list #'reverse-rhythms (list pitches durations))
+					 (list #'approaches (list pitches durations
+								  (loop :repeat (1+ (random (/ (length pitches) 3)))
+									:collect (- (random 10) 5))))))))
+    (print op)
+    (apply (first op) (second op))))
+
+;;; OUTPUT
 
 (defun midi->ly-pitch (note)
   (let* ((letter (case (mod (floor note) 12)
@@ -125,7 +140,10 @@
 
 (defparameter *lilypond*
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
-  #+linux "/app/.apt/usr/bin/lilypond.real")
+  #+linux (let ((ly-path "/app/.apt/usr/bin/lilypond.real"))
+	    (if (uiop:file-exists-p ly-path)
+		ly-path
+		"lilypond")))
 
 (defparameter *test-score*
   "\\score{
@@ -137,13 +155,19 @@
 	\\midi{}
 }")
 
+(defparameter *variations-n* 100)
+
 (hunchentoot:define-easy-handler (root :uri "/") (input)
   (setf (hunchentoot:content-type*) "application/pdf")
-  (let* ((output-filename #+linux "/app/output"
+  (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
+				      "/app/output"
+				      "output")
 			  #+windows "C:/Users/trocado/Desktop/output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
-      (format stream *test-score* (apply #'make-ly (multiple-value-list (parse-input input))))
+      (format stream *test-score* (apply #'make-ly (multiple-value-list (multiple-value-bind (pitches durations)
+									    (parse-input input)
+									  (process pitches durations)))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o"
