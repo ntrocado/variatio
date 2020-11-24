@@ -7,7 +7,7 @@
 
 (deftype pitch-letter ()
   `(and (standard-char)
-	(satisfies pitch-letters-p)))
+	(satisfies pitch-letter-p)))
 
 (defclass note ()
   ((letter
