@@ -88,8 +88,8 @@
 	    (:sharp "is")
 	    (:double-sharp "isis"))
 	  (let ((oct (pitch-spelling:octave note)))
-	    (make-string (abs (- 4 oct))
-			 :initial-element (if (> oct 4)
+	    (make-string (abs (- 3 oct))
+			 :initial-element (if (> oct 3)
 					      #\'
 					      #\,)))))
 
