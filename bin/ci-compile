@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CL_IMPL=sbcl
+CL_IMPL=ccl-bin
 
 apt-get update
 apt-get install -y autoconf build-essential git libcurl4-openssl-dev
