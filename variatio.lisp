@@ -14,9 +14,9 @@
 (defun text-accidental->value (accidental)
   "Parse the string ACCIDENTAL, returning the value to add or substract to the midi note."
   (alexandria:switch (accidental :test 'string=)
-    ("##" 2)
-    ("#+" 1.5)
-    ("#" 1)
+    ("ss" 2)
+    ("s+" 1.5)
+    ("s" 1)
     ("+" .5)
     ("-" -.5)
     ("b" -1)
@@ -33,18 +33,20 @@
 
 (defun dots (dur n)
   (if (zerop n) dur
-      (dots (+ dur (/ 1 (expt 2 n))) (1- n))))
+      ;; (dots (+ dur (/ 1 (expt 2 n))) (1- n))
+      (dots (+ dur (/ dur 2)) (1- n))))
 
 (defun parse-input (input)
+  "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
   (loop :with midi
 	:with durations
 	:for note :in (ppcre:split "\\s" input)
 	;;; TODO Error handling
 	:do (ppcre:register-groups-bind (pitch accidental octave (#'parse-integer dur) dot)
-		("^([cdefgabr])(##|#\\+|#|\\+|-|b|b-|bb)?('+|,+)?(\\d+)?(\\.+)?$" note)
+		("^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d+)?(\\.+)?$" note)
 	      (push (+ (char-pitch->value (character pitch))
 		       (text-accidental->value accidental)
-		       (text-octave->value octave (truncate (/ (or (first midi) 48) 12))))
+		       (text-octave->value octave (truncate (/ (or (first midi) 60) 12))))
 		    midi)
 	      (push (if dur
 			(dots (/ 4 dur) (length dot))
