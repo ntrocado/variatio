@@ -8,4 +8,5 @@
   :components ((:file "package")
                (:file "heroku")
 	       (:file "pitch-spelling")
+	       (:file "operations")
 	       (:file "variatio")))

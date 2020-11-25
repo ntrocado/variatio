@@ -37,7 +37,7 @@
   (if (zerop n) dur
       (dots (+ dur (/ dur 2)) (1- n))))
 
-(defun parse-input (input)
+(defun parse-input (input n)
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
   (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
@@ -54,18 +54,32 @@
 			(dots (/ 4 dur) (length dot))
 			(or (first durations) 1))
 		    durations))
-	:finally (return (values (reverse midi) (reverse durations)))))
+	:finally (return (values (reverse midi) (reverse durations) n))))
 
 ;;; PROCESS
 
 (defun process (pitches durations)
-  (let ((op (alexandria:random-elt (list (list #'reverse-pitches (list pitches durations))
-					 (list #'reverse-rhythms (list pitches durations))
-					 (list #'approaches (list pitches durations
-								  (loop :repeat (1+ (random (/ (length pitches) 3)))
-									:collect (- (random 10) 5))))))))
-    (print op)
+  (let ((op
+	  (alexandria:random-elt
+	   (list (list #'reverse-pitches
+		       (list pitches durations))
+		 (list #'reverse-rhythms
+		       (list pitches durations))
+		 (list #'approaches
+		       (list pitches durations
+			     (loop :repeat (max 1 (random (ceiling (/ (length pitches)
+								      3))))
+				   :collect (- (random 10) 5))))
+		 (list #'remove-notes (list pitches durations
+					    (+ .1 (random .5))))))))
     (apply (first op) (second op))))
+
+(defun process-n (pitches durations n)
+  (if (zerop n)
+      (values pitches durations)
+      (multiple-value-bind (pitches durations)
+	  (process pitches durations)
+	(process-n pitches durations (1- n)))))
 
 ;;; OUTPUT
 
@@ -157,7 +171,7 @@
 
 (defparameter *variations-n* 100)
 
-(hunchentoot:define-easy-handler (root :uri "/") (input)
+(hunchentoot:define-easy-handler (root :uri "/") (input n)
   (setf (hunchentoot:content-type*) "application/pdf")
   (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
 				      "/app/output"
@@ -165,9 +179,9 @@
 			  #+windows "C:/Users/trocado/Desktop/output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
-      (format stream *test-score* (apply #'make-ly (multiple-value-list (multiple-value-bind (pitches durations)
-									    (parse-input input)
-									  (process pitches durations)))))
+      (format stream *test-score*
+	      (apply (alexandria:multiple-value-compose #'make-ly #'process-n #'parse-input)
+		     (list input (parse-integer n))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o"
