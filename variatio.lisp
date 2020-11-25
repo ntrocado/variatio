@@ -154,8 +154,7 @@
 
 (defparameter *lilypond*
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
-  #+linux (or (uiop:file-exists-p "/app/.apt/usr/bin/lilypond.real")
-	      "lilypond"))
+  #+linux "/app/.apt/usr/bin/lilypond.real")
 
 (defparameter *test-score*
   "\\score{
