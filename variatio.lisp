@@ -154,10 +154,8 @@
 
 (defparameter *lilypond*
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
-  #+linux (let ((ly-path "/app/.apt/usr/bin/lilypond.real"))
-	    (if (uiop:file-exists-p ly-path)
-		ly-path
-		"lilypond")))
+  #+linux (or (uiop:file-exists-p "/app/.apt/usr/bin/lilypond.real")
+	      "lilypond"))
 
 (defparameter *test-score*
   "\\score{
