@@ -7,4 +7,5 @@
 	   letter
 	   accidental
 	   octave
-	   best-spelling))
+	   best-spelling
+	   best-spelling-split))

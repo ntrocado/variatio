@@ -149,7 +149,7 @@
   (with-output-to-string (out)
     (mapc (lambda (pitch duration)
 	    (format out "~a " (make-ly-note pitch duration)))
-	  (pitch-spelling:best-spelling pitches)
+	  (pitch-spelling:best-spelling-split pitches)
 	  durations)))
 
 (defparameter *lilypond*

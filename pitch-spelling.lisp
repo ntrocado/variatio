@@ -208,7 +208,7 @@
 	(unless (eql (accidental note) (gethash (letter note) ht))
 	  (setf (gethash (letter note) ht) (accidental note))))))
 
-(defun count-penalties (notes)
+(defun count-penalties (notes best-score-so-far)
   (loop :with penalty := 0
 	:initially (parsimony '() t)
 	:for (a b) :on notes
@@ -225,21 +225,32 @@
 		    (:augmented 1.4)
 		    (:other 8)
 		    (t 0)))
+	:when (>= penalty best-score-so-far) :do (return penalty)
 	:finally (return penalty)))
 
 ;; TODO avoid mixing accidentals
-(defun score-spelling (notes)
-  (count-penalties notes))
+(defun score-spelling (notes best-score-so-far)
+  (count-penalties notes best-score-so-far))
 
-;;; TODO we don't need to test a complete try, we can abandon it as soon as the penalty is above the best score so far!
+;; TODO needs a better algorithm
 (defun best-spelling (midi-note-numbers)
-  (loop :with best-score-so-far := (* 3 (length midi-note-numbers))
-	:with result
-	:for try :in (apply #'alexandria:map-product
-			    #'list
-			    (mapcar #'possible-spellings midi-note-numbers))
-	:for score := (score-spelling try)
-	:when (< score best-score-so-far)
-	  :do (setf best-score-so-far score)
-	  :and :do (setf result try)
-	:finally (return result)))
+  (if (= 1 (length midi-note-numbers))
+      (list (first (possible-spellings (car midi-note-numbers))))
+      (loop :with best-score-so-far := (* 3 (length midi-note-numbers))
+	    :with result
+	    :for try :in (apply #'alexandria:map-product
+				#'list
+				(mapcar #'possible-spellings midi-note-numbers))
+	    :for score := (score-spelling try best-score-so-far)
+	    :when (< score best-score-so-far)
+	      :do (setf best-score-so-far score)
+	      :and :do (setf result try)
+	    :finally (return result))))
+
+;; Cheat by spliting the input list in two
+(defun best-spelling-split (midi-note-numbers)
+  (if (< (length midi-note-numbers) 8)
+      (best-spelling midi-note-numbers)
+      (let ((clen (ceiling (/ (length midi-note-numbers) 2))))
+	(append (best-spelling (subseq midi-note-numbers 0 clen))
+		(best-spelling (subseq midi-note-numbers clen))))))
