@@ -189,7 +189,9 @@
       (uiop:run-program (list *lilypond*
 			      "-o"
 			      output-filename
-			      (namestring input-file))))
+			      (namestring input-file))
+			:output #p"~/ly.log"
+			:error-output #p"~/ly-error.log"))
     (prog1
 	(alexandria:read-file-into-byte-vector output-file)
       (uiop:delete-file-if-exists output-file))))
