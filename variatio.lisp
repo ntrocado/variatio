@@ -156,31 +156,19 @@
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
   #+linux "/app/.apt/usr/bin/lilypond.real")
 
-(defparameter *test-score*
-  "\\score{
+(defparameter *score-template*
+  (concatenate 'string
+	       (format nil "\\include \"~a\""
+		       (uiop:file-exists-p "static/template.ly"))
+	       "
+  ~{
+  \\score {
+    \\new Staff \\with { instrumentName = #(score-number) }
+    { ~a }~%
+  }
+  ~}"))
 
-	{
-		~{~a \\bar \"\" \\break ~}
-	}
-
-	\\layout{
-
-          indent = #0
-          ragged-right = ##t
-
-          \\context {
-            \\Score
-            defaultBarType = \"\"
-          }
-          \\context {
-            \\Staff
-            \\remove Time_signature_engraver
-          }
-        }
-	\\midi{}
-}")
-
-(defparameter *variations-n* 100)
+(defparameter *variations-n* 28)
 
 (hunchentoot:define-easy-handler (root :uri "/") (input n)
   (setf (hunchentoot:content-type*) "application/pdf")
@@ -190,8 +178,8 @@
 			  #+windows "C:/Users/trocado/Desktop/output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
-      (format stream *test-score*
-	      (loop :repeat 5
+      (format stream *score-template*
+	      (loop :repeat *variations-n*
 		    :collect (apply (alexandria:multiple-value-compose #'make-ly
 								       #'process-n
 								       #'parse-input)
