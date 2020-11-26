@@ -1,5 +1,2 @@
-*#
-README.html
-heroku-buildpack-testrunner
-shunit2
-~*
+*~
+*.lx64fsl
