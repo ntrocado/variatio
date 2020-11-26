@@ -158,11 +158,25 @@
 
 (defparameter *test-score*
   "\\score{
+
 	{
-		~a
+		~{~a \\bar \"\" \\break ~}
 	}
 
-	\\layout{}
+	\\layout{
+
+          indent = #0
+          ragged-right = ##t
+
+          \\context {
+            \\Score
+            defaultBarType = \"\"
+          }
+          \\context {
+            \\Staff
+            \\remove Time_signature_engraver
+          }
+        }
 	\\midi{}
 }")
 
@@ -177,8 +191,11 @@
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
       (format stream *test-score*
-	      (apply (alexandria:multiple-value-compose #'make-ly #'process-n #'parse-input)
-		     (list input (parse-integer n))))
+	      (loop :repeat 5
+		    :collect (apply (alexandria:multiple-value-compose #'make-ly
+								       #'process-n
+								       #'parse-input)
+				    (list input (parse-integer n)))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o"
