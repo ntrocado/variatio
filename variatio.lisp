@@ -160,7 +160,7 @@
   (concatenate 'string
 	       (format nil "\\include \"~a\""
 		       (or (uiop:file-exists-p "static/template.ly")
-			   (uiop:file-exists-p "/static/template.ly")))
+			   (uiop:file-exists-p "/app/static/template.ly")))
 	       "
   ~{
   \\score {
