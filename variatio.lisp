@@ -71,7 +71,10 @@
 								      3))))
 				   :collect (- (random 10) 5))))
 		 (list #'remove-notes (list pitches durations
-					    (+ .1 (random .5))))))))
+					    (+ .1 (random .5))))
+		 (list #'insert-rests (list pitches durations
+					    (+ .1 (random .3))))
+		 (list #'rotate (list pitches durations))))))
     (apply (first op) (second op))))
 
 (defun process-n (pitches durations n)
@@ -121,6 +124,9 @@
 			 :initial-element (if (> oct 3)
 					      #\'
 					      #\,)))))
+
+(defmethod note->ly-pitch ((note (eql 'rest)))
+  "r")
 
 (defun make-ly-note (pitch dur)
   (assert (> dur 1/32)

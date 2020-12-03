@@ -12,8 +12,12 @@
   (loop :for p :in pitches
 	:for d :in durations
 	:for a :in (apply #'alexandria:circular-list approach-formula)
-	:append (list (+ p a) p) :into new-pitches
-	:append (list (/ d 2) d) :into new-durations
+	:if p
+	  :append (list (+ p a) p) :into new-pitches
+	  :and :append (list (/ d 2) d) :into new-durations
+	:else
+	  :collect p :into new-pitches
+	  :and :collect d :into new-durations
 	:finally (return (values new-pitches new-durations))))
 
 (defun remove-notes (pitches durations prob)
@@ -28,3 +32,18 @@
 			     (values (last pitches) (last durations))
 			     (values new-pitches new-durations)))))
 
+(defun insert-rests (pitches durations prob)
+  "Randomly insert rests with probability PROB (between 0 and 1). The duration each inserted rest repeats another existing note or rest."
+  (assert (< 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
+  (loop :for p :in pitches
+	:for d :in durations
+	:collect p :into new-pitches
+	:collect d :into new-durations
+	:unless (< (random 1.0) prob)
+	  :collect nil :into new-pitches
+	  :and :collect (alexandria:random-elt durations)
+	:finally (return (values new-pitches new-durations))))
+
+(defun rotate (pitches durations)
+  (values (alexandria:rotate pitches)
+	  (alexandria:rotate durations)))
