@@ -15,7 +15,7 @@
   }
   \context {
     \Staff
-    \remove
-    Time_signature_engraver
+    \remove Time_signature_engraver
+    \accidentalStyle no-reset
   }
 }
