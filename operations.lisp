@@ -21,8 +21,8 @@
 	:finally (return (values new-pitches new-durations))))
 
 (defun remove-notes (pitches durations prob)
-  "Randomly remove notes from PITCHES and DURATIONS with probability PROB (between 0 and 1). If all notes are removed, return lists respectively with the pitch and duration of the last original note."
-  (assert (< 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
+  "Randomly remove notes and rests from PITCHES and DURATIONS with probability PROB (between 0 and 1). If all notes are removed, return lists respectively with the pitch and duration of the last original note."
+  (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
   (loop :for p :in pitches
 	:for d :in durations
 	:unless (< (random 1.0) prob)
