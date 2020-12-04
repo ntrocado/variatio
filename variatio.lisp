@@ -70,6 +70,7 @@
 			     (loop :repeat (max 1 (random (ceiling (/ (length pitches)
 								      3))))
 				   :collect (- (random 10) 5))))
+		 (list #'interval-fill (list pitches durations))
 		 (list #'remove-notes (list pitches durations
 					    (+ .1 (random .5))))
 		 (list #'insert-rests (list pitches durations

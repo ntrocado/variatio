@@ -20,6 +20,28 @@
 	  :and :collect d :into new-durations
 	:finally (return (values new-pitches new-durations))))
 
+(defun interval-fill (pitches durations)
+  "Chromatically fill the interval between notes, when the interval is between a major second and a major third."
+  (loop :for (p1 p2) :on pitches
+	:for (d1 d2) :on durations
+	:while p2
+	:for interval := (abs (- p2 p1))
+	:if (<= 2 interval 4)
+	  :append (append (let ((direction (if (plusp (- p2 p1)) 1 -1)))
+			    (alexandria:iota (1- interval)
+					     :start (+ p1 direction)
+					     :step direction))
+			  (list p2))
+	    :into new-pitches
+	    :and :append (append (make-list (1- interval) :initial-element (/ d1 2))
+				 (list d2))
+		   :into new-durations
+	:else
+	  :collect p2 :into new-pitches
+	  :and :collect d2 :into new-durations
+	:finally (return (values (push (first pitches) new-pitches)
+				 (push (first durations) new-durations)))))
+
 (defun remove-notes (pitches durations prob)
   "Randomly remove notes and rests from PITCHES and DURATIONS with probability PROB (between 0 and 1). If all notes are removed, return lists respectively with the pitch and duration of the last original note."
   (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
