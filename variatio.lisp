@@ -84,6 +84,15 @@
 	  (process pitches durations)
 	(process-n pitches durations (1- n)))))
 
+(defun trim (pitches durations &optional (max-len 23))
+  (flet ((remove-nth-element (l n)
+	   (remove-if #'identity l :start n :count 1)))
+    (if (<= (length pitches) max-len)
+	(values pitches durations)
+	(let ((rand-elt (random (length pitches))))
+	  (trim (remove-nth-element pitches rand-elt)
+		(remove-nth-element durations rand-elt))))))
+
 ;;; OUTPUT
 
 (defun midi->ly-pitch (note)
@@ -189,6 +198,7 @@
       (format stream *score-template*
 	      (loop :repeat *variations-n*
 		    :collect (apply (alexandria:multiple-value-compose #'make-ly
+								       #'trim
 								       #'process-n
 								       #'parse-input)
 				    (list input (parse-integer n)))))
