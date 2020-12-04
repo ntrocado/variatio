@@ -188,7 +188,7 @@
 
 (defparameter *variations-n* 28)
 
-(hunchentoot:define-easy-handler (root :uri "/") (input n)
+(hunchentoot:define-easy-handler (root :uri "/") (input complexity)
   (setf (hunchentoot:content-type*) "application/pdf")
   (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
 				      "/app/output"
@@ -202,7 +202,7 @@
 								       #'trim
 								       #'process-n
 								       #'parse-input)
-				    (list input (parse-integer n)))))
+				    (list input (parse-integer complexity)))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o"
