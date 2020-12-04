@@ -34,7 +34,7 @@
 
 (defun insert-rests (pitches durations prob)
   "Randomly insert rests with probability PROB (between 0 and 1). The duration each inserted rest repeats another existing note or rest."
-  (assert (< 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
+  (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
   (loop :for p :in pitches
 	:for d :in durations
 	:collect p :into new-pitches
