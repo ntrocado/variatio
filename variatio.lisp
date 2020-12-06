@@ -240,7 +240,7 @@
   }
   ~}"))
 
-(defparameter *variations-n* 28)
+(defparameter *variations-n* 50)
 
 (hunchentoot:define-easy-handler (root :uri "/") (input complexity)
   (setf (hunchentoot:content-type*) "application/pdf")
