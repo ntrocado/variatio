@@ -90,6 +90,11 @@
 	  (trim (remove-nth-element pitches rand-elt)
 		(remove-nth-element durations rand-elt))))))
 
+(defun fix-very-short-durations (pitches durations)
+  (if (find-if (lambda (x) (< x 1/32)) durations)
+      (fix-very-short-notes pitches (mapcar (lambda (x) (* x 2)) durations))
+      (values pitches durations)))
+
 ;;; OUTPUT
 
 (defun midi->ly-pitch (note)
@@ -195,6 +200,7 @@
       (format stream *score-template*
 	      (loop :repeat *variations-n*
 		    :collect (apply (alexandria:multiple-value-compose #'make-ly
+								       #'fix-very-short-durations
 								       #'trim
 								       #'process-n
 								       #'parse-input)
