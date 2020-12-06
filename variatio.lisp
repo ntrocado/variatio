@@ -46,7 +46,7 @@
 		       (text-accidental->value accidental)
 		       (text-octave->value octave (truncate (/ (or (first midi) 60) 12))))
 		    midi)
-	      (push (or (parse-float:parse-float dur)
+	      (push (or (parse-float:parse-float dur :junk-allowed t)
 			(or (first durations) 1))
 		    durations))
 	:finally (return (values (reverse midi) (reverse durations) n))))
