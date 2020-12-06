@@ -73,3 +73,44 @@
 (defun rotate (pitches durations)
   (values (alexandria:rotate pitches)
 	  (alexandria:rotate durations)))
+
+(defun augment (pitches durations &optional (by 2))
+  (values pitches (mapcar (lambda (x) (* x by)) durations)))
+
+;;; from trocadolib
+(defun scale-value (value orig-min orig-max dest-min dest-max &key (curve 1))
+  "Scales VALUE from an original to a destination range. If VALUE, ORIG-MIN and ORIG-MAX are all the same, returns the lowest value of the destination bracket. Set CURVE to 1 for linear scaling, higher for exponential scaling."
+  (assert (and (>= value orig-min)
+	       (<= value orig-max))
+	  (value orig-min orig-max)
+	  "~S must be between ~S and ~S." value orig-min orig-max)
+  (cond ((= value orig-min orig-max) dest-min)
+	((= curve 1) (+ (/ (* (- value orig-min)
+			      (- dest-max dest-min))
+			   (- orig-max orig-min))
+			dest-min))
+	(t (let* ((b curve)
+		  (s (/ (- dest-max dest-min) (- b 1)))
+		  (r (/ (- (- dest-max dest-min)) (- b 1))))
+	     (+ (* s (expt b (/ value (- orig-max orig-min))))
+		r
+		dest-min)))))
+
+(defun rhythm-flatten (pitches durations)
+  "Re-scale DURATIONS reducing the range between the shortest and longest values."
+  (let* ((min (apply #'min durations))
+	 (max (apply #'max durations))
+	 (halfway (/ (- max min) 4)))
+    (values pitches (mapcar (lambda (d)
+			      (scale-value d min max
+					   (+ min halfway)
+					   (- max halfway)))
+			    durations))))
+
+(defun rhythm-raise-floor (pitches durations)
+  "Raise minimum duration to twice the shortest one in DURATIONS."
+  (let* ((min (apply #'min durations))
+	 (max (apply #'max durations)))
+    (values pitches (mapcar (lambda (d)
+			      (alexandria:clamp d (* min 2) max))
+			    durations))))

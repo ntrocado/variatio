@@ -75,7 +75,12 @@
 					    (+ .1 (random .5))))
 		 (list #'insert-rests (list pitches durations
 					    (+ .1 (random .4))))
-		 (list #'rotate (list pitches durations))))))
+		 (list #'rotate (list pitches durations))
+		 (list #'augment (list pitches durations (if (> (random 1.0) .75)
+							     2
+							     (alexandria:random-elt '(1.5 2.5 3)))))
+		 (list #'rhythm-flatten (list pitches durations))
+		 (list #'rhythm-raise-floor (list pitches durations))))))
     (apply (first op) (second op))))
 
 (defun process-n (pitches durations n)
