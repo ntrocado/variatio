@@ -12,7 +12,7 @@
   (loop :for p :in pitches
 	:for d :in durations
 	:for a :in (apply #'alexandria:circular-list approach-formula)
-	:if p
+	:if (not (rest-p p))
 	  :append (list (+ p a) p) :into new-pitches
 	  :and :append (list (/ d 2) d) :into new-durations
 	:else
@@ -25,8 +25,10 @@
   (loop :for (p1 p2) :on pitches
 	:for (d1 d2) :on durations
 	:while p2
-	:for interval := (abs (- p2 p1))
-	:if (<= 2 interval 4)
+	:for interval := (unless (or (rest-p p1)
+				     (rest-p p2))
+			   (abs (- p2 p1)))
+	:if (and interval (<= 2 interval 4))
 	  :append (append (let ((direction (if (plusp (- p2 p1)) 1 -1)))
 			    (alexandria:iota (1- interval)
 					     :start (+ p1 direction)
@@ -59,11 +61,13 @@
   (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
   (loop :for p :in pitches
 	:for d :in durations
-	:collect p :into new-pitches
-	:collect d :into new-durations
-	:unless (< (random 1.0) prob)
-	  :collect nil :into new-pitches
-	  :and :collect (alexandria:random-elt durations)
+	:if (< (random 1.0) prob)
+	  :append (list 'rest p) :into new-pitches
+	  :and :append (list (alexandria:random-elt durations) d)
+		 :into new-durations
+	:else
+	  :collect p :into new-pitches
+	  :and :collect d :into new-durations
 	:finally (return (values new-pitches new-durations))))
 
 (defun rotate (pitches durations)

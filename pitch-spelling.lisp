@@ -44,6 +44,9 @@
 		(:double-flat "bb"))
 	      octave))))
 
+(defun rest-p (x)
+  (eql x 'rest))
+
 (defun letter-value (letter)
   (case letter
     (#\a 5)
@@ -138,7 +141,8 @@
 ;; 71 ax b cb
 
 (defun possible-spellings (midi-note-number)
-  (if midi-note-number
+  (if (rest-p midi-note-number)
+      (list 'rest)
       (let ((octave (1- (floor (/ midi-note-number 12)))))
 	(flet ((make-note (letter accidental)
 		 (make-instance 'note :letter letter :octave octave :accidental accidental)))
@@ -173,8 +177,7 @@
 		      (make-note #\a :sharp)))
 	    (11 (list (make-note #\b :natural)
 		      (make-note #\c :flat)
-		      (make-note #\a :double-sharp))))))
-      (list 'rest)))
+		      (make-note #\a :double-sharp))))))))
 
 (defun count-accidentals (notes)
   (count-if-not (lambda (x) (eql (accidental x) :natural)) notes))

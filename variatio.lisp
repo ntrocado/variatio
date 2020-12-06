@@ -42,9 +42,14 @@
 ;;; TODO Error handling
 	:do (ppcre:register-groups-bind (pitch accidental octave dur)
 		("^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$" note)
-	      (push (+ (char-pitch->value (character pitch))
-		       (text-accidental->value accidental)
-		       (text-octave->value octave (truncate (/ (or (first midi) 60) 12))))
+	      (push (alexandria:when-let (ch (character pitch))
+		      (if (char= ch #\r)
+			  'rest
+			  (+ (char-pitch->value (character pitch))
+			     (text-accidental->value accidental)
+			     (text-octave->value octave (truncate (/ (or (first midi)
+									 60)
+								     12))))))
 		    midi)
 	      (push (or (parse-float:parse-float dur :junk-allowed t)
 			(or (first durations) 1))
@@ -69,7 +74,7 @@
 		 (list #'remove-notes (list pitches durations
 					    (+ .1 (random .5))))
 		 (list #'insert-rests (list pitches durations
-					    (+ .1 (random .3))))
+					    (+ .1 (random .4))))
 		 (list #'rotate (list pitches durations))))))
     (apply (first op) (second op))))
 
