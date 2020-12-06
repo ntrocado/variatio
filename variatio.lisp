@@ -33,25 +33,20 @@
 	 default)
      12))
 
-(defun dots (dur n)
-  (if (zerop n) dur
-      (dots (+ dur (/ dur 2)) (1- n))))
-
 (defun parse-input (input n)
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
   (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
 	:with durations
 	:for note :in (ppcre:split "\\s" input)
-	;;; TODO Error handling
-	:do (ppcre:register-groups-bind (pitch accidental octave (#'parse-integer dur) dot)
-		("^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d+)?(\\.+)?$" note)
+;;; TODO Error handling
+	:do (ppcre:register-groups-bind (pitch accidental octave dur)
+		("^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$" note)
 	      (push (+ (char-pitch->value (character pitch))
 		       (text-accidental->value accidental)
 		       (text-octave->value octave (truncate (/ (or (first midi) 60) 12))))
 		    midi)
-	      (push (if dur
-			(dots (/ 4 dur) (length dot))
+	      (push (or (parse-float:parse-float dur)
 			(or (first durations) 1))
 		    durations))
 	:finally (return (values (reverse midi) (reverse durations) n))))
