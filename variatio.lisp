@@ -81,6 +81,7 @@
 	(process-n pitches durations (1- n)))))
 
 (defun trim (pitches durations &optional (max-len 23))
+  "Remove random notes/rests if there are more than MAX-LEN of them."
   (flet ((remove-nth-element (l n)
 	   (remove-if #'identity l :start n :count 1)))
     (if (<= (length pitches) max-len)
