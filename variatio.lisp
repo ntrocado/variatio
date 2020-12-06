@@ -176,9 +176,9 @@
 (defparameter *score-template*
   (concatenate 'string
 	       (format nil "\\include \"~a\""
-		       (or (uiop:file-exists-p "static/template.ly")
-			   (uiop:file-exists-p "/app/static/template.ly")
-			   "template.ly"))
+		       (or (uiop:file-exists-p "template.ly")
+			   (uiop:file-exists-p "static/template.ly")
+			   "/app/static/template.ly"))
 	       "
   ~{
   \\score {
