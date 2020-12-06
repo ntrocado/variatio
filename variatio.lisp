@@ -146,6 +146,9 @@
 					      #\'
 					      #\,)))))
 
+(defmethod note->ly-pitch ((note integer))
+  (note->ly-pitch (car (best-spelling (list note)))))
+
 (defmethod note->ly-pitch ((note (eql 'rest)))
   "r")
 
@@ -171,13 +174,59 @@
 						       "~ "
 						       (make-ly-note pitch frac-part)))))))
 
+(defun ends-a-beat-p (end)
+  (zerop (nth-value 1 (truncate end))))
+
+(defun rest-of-beat (onset)
+  (- 1 (nth-value 1 (truncate onset))))
+
+(defun tie-or-dot (duration))
+
+(defun crosses-beats-p (duration onset)
+  (> (+ duration onset)
+     (truncate (1+ onset))))
+
+(defun rhythm-spell (pitches durations)
+  (with-output-to-string (out)
+    (loop :for p :in pitches
+	  :for d :in durations
+	  :for int-part := (if (>= d 1)
+			       (loop :for i := 1 :then (* i 2)
+				     :while (<= i d)
+				     :maximize i)
+			       (loop :for i := 1 :then (/ i 2)
+				     :minimize i
+				     :until (<= i d)))
+	  :for frac-part := (- d int-part)
+	  :for end := d :then (+ end d)
+	  :for onset := 0 :then (- end d)
+	  :do 
+	     (if (or (ends-a-beat-p end)
+		     (not (crosses-beats-p d onset))
+		     (and (or (>= d 2)
+			      (= d 1.5))
+			  (zerop (nth-value 1 (truncate onset))))
+		     (and (= d 1) (zerop (mod end .5))))
+		 (format out " ~a~a~a"
+			 (note->ly-pitch p)
+			 (cond ((= int-part 8) "\\longa")
+			       ((= int-part 16) "\\breve")
+			       (t (/ 4 int-part)))
+			 (cond ((and (= frac-part (/ int-part 2))
+				     (or (not (rest-p p))
+					 (< d 1)))
+				".")
+			       ((plusp frac-part) (format nil "~@[~a~]~a" (when (not (rest-p p)) "~") (rhythm-spell (list p) (list frac-part))))
+			       (t "")))
+		 
+		 (format out "~a~@[~a~]~a"
+			 (rhythm-spell (list p) (list (rest-of-beat onset)))
+			 (when (not (rest-p p)) "~")
+			 (rhythm-spell (list p) (list (- d (rest-of-beat onset)))))))))
+
 (defun make-ly (pitches durations)
   "Take a list of PITCHES in midi note values and a list of DURATIONS and return a text string in Lilypond format."
-  (with-output-to-string (out)
-    (mapc (lambda (pitch duration)
-	    (format out "~a " (make-ly-note pitch duration)))
-	  (pitch-spelling:best-spelling-split pitches)
-	  durations)))
+  (string-trim '(#\Space) (rhythm-spell (best-spelling-split pitches) durations)))
 
 (defparameter *lilypond*
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
