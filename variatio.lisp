@@ -33,7 +33,27 @@
 	 default)
      12))
 
-(defun parse-input (input n)
+(defparameter *input-regex*
+  "^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$")
+
+(defun parse-to-note (pitch accidental octave previous-notes)
+  (make-instance
+   'note
+   :letter pitch
+   :accidental (alexandria:switch (accidental :test 'string=)
+		 ("bb" :double-flat)
+		 ("b" :flat)
+		 ("s" :sharp)
+		 ("ss" :double-sharp)
+		 (t :natural))
+   :octave (/ (text-octave->value octave
+				  (octave (or (find-if (lambda (x)
+							 (eql (type-of x) 'note))
+						       previous-notes)
+					      (make-instance 'note))))
+	      12)))
+
+(defun parse-input (input n &key (return-notes nil))
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
   (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
@@ -41,20 +61,28 @@
 	:for note :in (ppcre:split "\\s" input)
 ;;; TODO Error handling
 	:do (ppcre:register-groups-bind (pitch accidental octave dur)
-		("^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$" note)
+		(*input-regex* note)
 	      (push (alexandria:when-let (ch (character pitch))
-		      (if (char= ch #\r)
-			  'rest
-			  (+ (char-pitch->value (character pitch))
-			     (text-accidental->value accidental)
-			     (text-octave->value octave (truncate (/ (or (first midi)
-									 60)
-								     12))))))
+		      (if return-notes
+			  (parse-to-note ch accidental octave midi)
+			  (if (char= ch #\r)
+			      'rest
+			      (+ (char-pitch->value ch)
+				 (text-accidental->value accidental)
+				 (text-octave->value octave (truncate (/ (or (first midi)
+									     60)
+									 12)))))))
 		    midi)
 	      (push (or (parse-float:parse-float dur :junk-allowed t)
 			(or (first durations) 1))
 		    durations))
 	:finally (return (values (reverse midi) (reverse durations) n))))
+
+(defun original-phrase (input n)
+  (multiple-value-bind (pitches durations n)
+      (parse-input input n :return-notes t)
+    (declare (ignore n))
+    (rhythm-spell pitches durations)))
 
 ;;; PROCESS
 
@@ -251,13 +279,15 @@
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
       (format stream *score-template*
-	      (loop :repeat *variations-n*
-		    :collect (apply (alexandria:multiple-value-compose #'make-ly
-								       #'fix-very-short-durations
-								       #'trim
-								       #'process-n
-								       #'parse-input)
-				    (list input (parse-integer complexity)))))
+	      (append (list (original-phrase input complexity))
+		      (loop :repeat (1- *variations-n*)
+			    :collect (apply (alexandria:multiple-value-compose
+					     #'make-ly
+					     #'fix-very-short-durations
+					     #'trim
+					     #'process-n
+					     #'parse-input)
+					    (list input (parse-integer complexity))))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o"
