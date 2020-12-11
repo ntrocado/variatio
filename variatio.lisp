@@ -193,6 +193,26 @@
   (> (+ duration onset)
      (truncate (1+ onset))))
 
+(defun rest-of-bar (onset &optional (beats-per-bar 4))
+  (- beats-per-bar (mod onset beats-per-bar)))
+
+(defun crosses-bars-p (duration onset &optional (beats-per-bar 4))
+  (> (+ (mod onset beats-per-bar) duration)
+     beats-per-bar))
+
+(defun post-half-bar (duration onset beats-per-bar)
+  (let ((r (- (+ duration (mod onset beats-per-bar))
+	      (/ beats-per-bar 2))))
+    (when (and (< onset (/ beats-per-bar 2))
+	       (plusp r)
+	       ;; some simple cases
+	       ;; TODO add more?...
+	       (not (or (and (= duration 4) (= onset 0) (= beats-per-bar 4))
+			(and (= duration 2) (= onset 1) (= beats-per-bar 4))
+			(and (>= duration 3) (= onset 0) (= beats-per-bar 4))
+			(and (>= duration 3) (= onset 1) (= beats-per-bar 4)))))
+      r)))
+
 (defun int-frac (d)
   (let* ((int-part (if (>= d 1)
 		       (loop :for i := 1 :then (* i 2)
@@ -204,51 +224,78 @@
 	 (frac-part (- d int-part)))
     (values int-part frac-part)))
 
-(defun rhythm-spell (pitches durations)
+(defun ties-across-beats (p d tie-from &optional (beats-per-bar 4))
+  (format nil "~a~@[~a~]~a"
+	  (rhythm-spell (list p) (list tie-from) beats-per-bar)
+	  (when (not (rest-p p)) "~")
+	  (rhythm-spell (list p) (list (- d tie-from)) beats-per-bar)))
+
+(defun rhythm-spell (pitches durations &optional (beats-per-bar 4))
   (with-output-to-string (out)
     (loop :for p :in pitches
 	  :for d :in durations
 	  :for end := d :then (+ end d)
 	  :for onset := 0 :then (- end d)
-	  :do 
-	     (if (or (ends-a-beat-p end)
-		     (not (crosses-beats-p d onset))
-		     (and (or (>= d 2)
-			      (= d 1.5))
-			  (zerop (nth-value 1 (truncate onset))))
-		     (and (= d 1) (zerop (mod end .5))))
+	  :do
+	     (print onset)
+	     (alexandria:if-let (post-half-bar (post-half-bar d onset beats-per-bar))
+	       (princ (ties-across-beats p d (- d post-half-bar) beats-per-bar)
+		      out)
 
-		 ;; ends on the beat, doesn't extend across beats, special cases
-		 (multiple-value-bind (int-part frac-part)
-		     (int-frac d)
-		   (format out " ~a~a~@[~a~]"
-			   (note->ly-pitch p)
-			   (cond ((= int-part 8) "\\longa")
-				 ((= int-part 16) "\\breve")
-				 (t (/ 4 int-part)))
-			   (cond
-			     ;; dot
-			     ((and (= frac-part (/ int-part 2))
-				   (or (not (rest-p p))
-				       (< d 1)))
-			      ".")
-			     ;; tie
-			     ((plusp frac-part)
-			      (format nil "~@[~a~]~a"
-				      (when (not (rest-p p)) "~")
-				      (rhythm-spell (list p)
-						    (list frac-part)))))))
+	       (cond ((crosses-bars-p d onset beats-per-bar)
+		      (princ (ties-across-beats p d (rest-of-bar onset beats-per-bar))
+			     out))
+		    
+		     ((or (ends-a-beat-p end)
+			  (not (crosses-beats-p d onset))
+			  (and (or (>= d 2)
+				   (= d 1.5))
+			       (zerop (nth-value 1 (truncate onset))))
+			  (and (= d 1) (zerop (mod end .5))))
+      		      ;; ends on the beat, doesn't extend across beats, special cases
+		      (multiple-value-bind (before-tie after-tie)
+			  (int-frac d)
+			(format out " ~a~a~@[~a~]"
+				(note->ly-pitch p)
+				(cond ((= before-tie 8) "\\longa")
+				      ((= before-tie 16) "\\breve")
+				      (t (/ 4 before-tie)))
+				(cond
+				  ;; dot
+				  ((and (= after-tie (/ before-tie 2))
+					(or (not (rest-p p))
+					    (< d 1)))
+				   ".")
+				  ;; tie
+				  ((plusp after-tie)
+				   (format nil "~@[~a~]~a"
+					   (when (not (rest-p p)) "~")
+					   (rhythm-spell (list p)
+							 (list after-tie)
+							 beats-per-bar)))))))
+		     
+		     ;; ties across beats
+		     (t (princ (ties-across-beats p d (rest-of-beat onset))
+			       out)))))))
 
-		 ;; ties across beats
-		 (format out "~a~@[~a~]~a"
-			 (rhythm-spell (list p) (list (rest-of-beat onset)))
-			 (when (not (rest-p p)) "~")
-			 (rhythm-spell (list p)
-				       (list (- d (rest-of-beat onset)))))))))
+(defun final-rest (pitches durations &optional (beats-per-bar 4))
+  (let ((total (reduce #'+ durations)))
+    (if (zerop (mod total beats-per-bar))
+	(values pitches durations)
+	(let ((missing-dur (loop :for x :by beats-per-bar
+				 :when (> x total)
+				   :return (- x total))))
+	  (if (rest-p (alexandria:last-elt pitches))
+	      (values pitches (append (butlast durations) (list (+ (alexandria:last-elt durations)
+								   missing-dur))))
+	      (values (append pitches (list 'rest)) (append durations (list missing-dur))))))))
 
 (defun make-ly (pitches durations)
   "Take a list of PITCHES in midi note values and a list of DURATIONS and return a text string in Lilypond format."
-  (string-trim '(#\Space) (rhythm-spell (best-spelling-split pitches) durations)))
+  (string-trim '(#\Space) (funcall (alexandria:multiple-value-compose #'rhythm-spell
+								      #'final-rest)
+				   (best-spelling-split pitches)
+				   durations)))
 
 (defparameter *lilypond*
   #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
