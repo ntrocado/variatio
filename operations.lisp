@@ -130,7 +130,9 @@
 	    (append (list (floor mean))
 		    pitches
 		    (list (ceiling mean))))
-	  durations))
+	  (append (list (alexandria:random-elt durations))
+		  durations
+		  (list (alexandria:random-elt durations)))))
 
 (defun bookend-over-ambitus (pitches durations)
   "Add the note below the lowest one to the start and above the highest one to the end of PITCHES."
@@ -140,7 +142,9 @@
 	    (append (list 1-lowest)
 		    pitches
 		    (list 1+highest)))
-	  durations))
+	  (append (list (alexandria:random-elt durations))
+		  durations
+		  (list (alexandria:random-elt durations)))))
 
 (defun mv-expand-compress (pitches durations amount)
   "Expand or compress the melodic vector for PITCHES; AMOUNT is >1 for expanding and <1 for compressing."
