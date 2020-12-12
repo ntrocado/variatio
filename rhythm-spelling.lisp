@@ -100,7 +100,7 @@
 		    ;; print note
 		    ((zerop frac-part)
 		     (format out " ~a~a"
-			     (note->ly-pitch p)
+			     (variatio:note->ly-pitch p)
 			     (cond ((= d 8) "\\longa")
 				   ((= d 16) "\\breve")
 				   (t (/ 4 int-part)))))

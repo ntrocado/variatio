@@ -10,7 +10,9 @@
 
 (defpackage #:rhythm-spelling
   (:use #:cl)
+  (:import-from #:pitch-spelling rest-p)
   (:export rhythm-spell))
 
 (defpackage #:variatio
-  (:use #:cl #:pitch-spelling #:rhythm-spelling))
+  (:use #:cl #:pitch-spelling #:rhythm-spelling)
+  (:export note->ly-pitch))
