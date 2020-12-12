@@ -1,5 +1,5 @@
 (asdf:defsystem #:variatio
-  :description "Generate a pdf with variations on a musical motive"
+  :description "Generate a pdf with automatic variations on a musical motive"
   :author "Nuno Trocado"
   :license  "GNU Lesser Public License 3.0"
   :version "0.0.1"
@@ -8,5 +8,6 @@
   :components ((:file "package")
                (:file "heroku")
 	       (:file "pitch-spelling")
+	       (:file "rhythm-spelling")
 	       (:file "operations")
 	       (:file "variatio")))
