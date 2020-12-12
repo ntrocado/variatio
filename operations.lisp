@@ -114,3 +114,12 @@
     (values pitches (mapcar (lambda (d)
 			      (alexandria:clamp d (* min 2) max))
 			    durations))))
+
+(defun octave-shift (pitches durations prob)
+  (values (mapcar (lambda (x)
+		    (if (and (< (random 1.0) prob)
+			     (not (rest-p x)))
+			(funcall (alexandria:random-elt '(+ -)) x 12)
+			x))
+		  pitches)
+	  durations))
