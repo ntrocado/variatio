@@ -134,7 +134,7 @@
 
 (defun fix-very-short-durations (pitches durations)
   (if (find-if (lambda (x) (< x 1/32)) durations)
-      (fix-very-short-notes pitches (mapcar (lambda (x) (* x 2)) durations))
+      (fix-very-short-durations pitches (mapcar (lambda (x) (* x 2)) durations))
       (values pitches durations)))
 
 ;;; OUTPUT
