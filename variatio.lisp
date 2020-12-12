@@ -208,18 +208,14 @@
   #+linux "/app/.apt/usr/bin/lilypond.real")
 
 (defparameter *score-template*
-  (concatenate 'string
-	       (format nil "\\include \"~a\""
-		       (or (uiop:file-exists-p "template.ly")
-			   (uiop:file-exists-p "static/template.ly")
-			   "/app/static/template.ly"))
-	       "
+  "
+  \\include \"template.ly\"
   ~{
   \\score {
     \\new Staff \\with { instrumentName = #(score-number) }
     { ~a \\bar \"|.\" }~%
   }
-  ~}"))
+  ~}")
 
 (defparameter *variations-n* 50)
 
@@ -228,7 +224,7 @@
   (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
 				      "/app/output"
 				      "output")
-			  #+windows "C:/Users/trocado/Desktop/output")
+			  #+windows "output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
       (format stream *score-template*
@@ -243,8 +239,9 @@
 					    (list input (parse-integer complexity))))))
       :close-stream
       (uiop:run-program (list *lilypond*
-			      "-o"
-			      output-filename
+			      "-o" output-filename
+			      "-I" "static/"
+			      "-I" "/app/static/"
 			      (namestring input-file))
 			:output #p"~/ly.log"
 			:error-output #p"~/ly-error.log"))
