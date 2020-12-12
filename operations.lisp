@@ -123,3 +123,37 @@
 			x))
 		  pitches)
 	  durations))
+
+(defun bookend-mean (pitches durations)
+  "Add the mean of PITCHES rounded down to the start and rounded up to the end of PITCHES."
+  (values (let ((mean (alexandria:mean pitches)))
+	    (append (list (floor mean))
+		    pitches
+		    (list (ceiling mean))))
+	  durations))
+
+(defun bookend-over-ambitus (pitches durations)
+  "Add the note below the lowest one to the start and above the highest one to the end of PITCHES."
+  (values (let* ((no-rests (remove 'rest pitches))
+		 (1+highest (1+ (apply #'max no-rests)))
+		 (1-lowest (1- (apply #'min no-rests))))
+	    (append (list 1-lowest)
+		    pitches
+		    (list 1+highest)))
+	  durations))
+
+(defun mv-expand-compress (pitches durations amount)
+  "Expand or compress the melodic vector for PITCHES; AMOUNT is >1 for expanding and <1 for compressing."
+  (values (let* ((no-rests (remove 'rest pitches))
+		 (first-pitch (first no-rests))
+		 (mv (loop :for (a b) :on no-rests
+			   :while b
+			   :sum (round (* amount (- b a))) :into s
+			   :collect s)))
+	    (append (list first-pitch)
+		    (loop :for p :in (rest pitches)
+			  :if (rest-p p)
+			    :collect p
+			  :else
+			    :collect (+ first-pitch (pop mv)))))
+	  durations))

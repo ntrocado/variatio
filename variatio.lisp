@@ -109,7 +109,10 @@
 							     (alexandria:random-elt '(1.5 2.5 3)))))
 		 (list #'rhythm-flatten (list pitches durations))
 		 (list #'rhythm-raise-floor (list pitches durations))
-		 (list #'octave-shift (list pitches durations .3))))))
+		 (list #'octave-shift (list pitches durations .3))
+		 (list #'bookend-mean (list pitches durations))
+		 (list #'bookend-over-ambitus (list pitches durations))
+		 (list #'mv-expand-compress (list pitches durations (+ .1 (random 2.4))))))))
     (apply (first op) (second op))))
 
 (defun process-n (pitches durations n)
