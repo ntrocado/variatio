@@ -95,7 +95,7 @@
 		    ((and (crosses-beats-p d onset)
 			  (not (and (zerop frac-part)
 				    (>= (metric-subdivision (nth-value 1 (truncate onset)))
-					(/ d 2))))
+					(min (/ d 2) 1))))
 			  (not (and (= d 1) (zerop (mod end .5)))))
 		     (princ (ties p d (rest-of-beat onset) beats-per-bar onset)
 			    out))
