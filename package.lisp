@@ -5,8 +5,8 @@
 	   accidental
 	   octave
 	   rest-p
-	   best-spelling
-	   best-spelling-split))
+	   pitch-spell
+	   pitch-spell-split))
 
 (defpackage #:variatio
   (:use #:cl #:pitch-spelling))

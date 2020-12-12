@@ -1,5 +1,3 @@
-;;; pitch-spelling.lisp
-
 (in-package :pitch-spelling)
 
 (defun pitch-letter-p (letter)
@@ -238,7 +236,7 @@
   (count-penalties (remove 'rest notes) best-score-so-far))
 
 ;; TODO needs a better algorithm
-(defun best-spelling (midi-note-numbers)
+(defun pitch-spell (midi-note-numbers)
   (if (= 1 (length midi-note-numbers))
       (list (first (possible-spellings (car midi-note-numbers))))
       (loop :with best-score-so-far := (* 3 (length midi-note-numbers))
@@ -253,9 +251,9 @@
 	    :finally (return result))))
 
 ;; Cheat by spliting the input list in two
-(defun best-spelling-split (midi-note-numbers)
+(defun pitch-spell-split (midi-note-numbers)
   (if (< (length midi-note-numbers) 8)
-      (best-spelling midi-note-numbers)
+      (pitch-spell midi-note-numbers)
       (let ((clen (ceiling (/ (length midi-note-numbers) 2))))
-	(append (best-spelling (subseq midi-note-numbers 0 clen))
-		(best-spelling (subseq midi-note-numbers clen))))))
+	(append (pitch-spell (subseq midi-note-numbers 0 clen))
+		(pitch-spell (subseq midi-note-numbers clen))))))

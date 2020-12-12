@@ -178,7 +178,7 @@
 					      #\,)))))
 
 (defmethod note->ly-pitch ((note integer))
-  (note->ly-pitch (car (best-spelling (list note)))))
+  (note->ly-pitch (car (pitch-spell (list note)))))
 
 (defmethod note->ly-pitch ((note (eql 'rest)))
   "r")
@@ -294,7 +294,7 @@
   "Take a list of PITCHES in midi note values and a list of DURATIONS and return a text string in Lilypond format."
   (string-trim '(#\Space) (funcall (alexandria:multiple-value-compose #'rhythm-spell
 								      #'final-rest)
-				   (best-spelling-split pitches)
+				   (pitch-spell-split pitches)
 				   durations)))
 
 (defparameter *lilypond*
