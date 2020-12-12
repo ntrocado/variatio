@@ -162,16 +162,16 @@
 (defgeneric note->ly-pitch (note)
     (:documentation "Generates a lilypond string for a given pitch."))
 
-(defmethod note->ly-pitch ((note pitch-spelling:note))
+(defmethod note->ly-pitch ((note note))
   (format nil "~a~a~a"
-	  (pitch-spelling:letter note)
-	  (case (pitch-spelling:accidental note)
+	  (letter note)
+	  (case (accidental note)
 	    (:double-flat "eses")
 	    (:flat "es")
 	    (:natural "")
 	    (:sharp "is")
 	    (:double-sharp "isis"))
-	  (let ((oct (pitch-spelling:octave note)))
+	  (let ((oct (octave note)))
 	    (make-string (abs (- 3 oct))
 			 :initial-element (if (> oct 3)
 					      #\'
@@ -182,102 +182,7 @@
 
 (defmethod note->ly-pitch ((note (eql 'rest)))
   "r")
-
-(defun ends-a-beat-p (end)
-  (zerop (nth-value 1 (truncate end))))
-
-(defun rest-of-beat (onset)
-  (- 1 (nth-value 1 (truncate onset))))
-
-(defun crosses-beats-p (duration onset)
-  (> (+ duration onset)
-     (truncate (1+ onset))))
-
-(defun rest-of-bar (onset &optional (beats-per-bar 4))
-  (- beats-per-bar (mod onset beats-per-bar)))
-
-(defun crosses-bars-p (duration onset &optional (beats-per-bar 4))
-  (> (+ (mod onset beats-per-bar) duration)
-     beats-per-bar))
-
-(defun post-half-bar (duration onset beats-per-bar)
-  (let ((r (- (+ duration (mod onset beats-per-bar))
-	      (/ beats-per-bar 2))))
-    (when (and (< onset (/ beats-per-bar 2))
-	       (plusp r)
-	       ;; some simple cases
-	       ;; TODO add more?...
-	       (not (or (and (= duration 4) (= onset 0) (= beats-per-bar 4))
-			(and (= duration 2) (= onset 1) (= beats-per-bar 4))
-			(and (>= duration 3) (= onset 0) (= beats-per-bar 4))
-			(and (>= duration 3) (= onset 1) (= beats-per-bar 4)))))
-      r)))
-
-(defun int-frac (d)
-  (let* ((int-part (if (>= d 1)
-		       (loop :for i := 1 :then (* i 2)
-			     :while (<= i d)
-			     :maximize i)
-		       (loop :for i := 1 :then (/ i 2)
-			     :minimize i
-			     :until (<= i d))))
-	 (frac-part (- d int-part)))
-    (values int-part frac-part)))
-
-(defun ties-across-beats (p d tie-from &optional (beats-per-bar 4))
-  (format nil "~a~@[~a~]~a"
-	  (rhythm-spell (list p) (list tie-from) beats-per-bar)
-	  (when (not (rest-p p)) "~")
-	  (rhythm-spell (list p) (list (- d tie-from)) beats-per-bar)))
-
-(defun rhythm-spell (pitches durations &optional (beats-per-bar 4))
-  (with-output-to-string (out)
-    (loop :for p :in pitches
-	  :for d :in durations
-	  :for end := d :then (+ end d)
-	  :for onset := 0 :then (- end d)
-	  :do
-	     (print onset)
-	     (alexandria:if-let (post-half-bar (post-half-bar d onset beats-per-bar))
-	       (princ (ties-across-beats p d (- d post-half-bar) beats-per-bar)
-		      out)
-
-	       (cond ((crosses-bars-p d onset beats-per-bar)
-		      (princ (ties-across-beats p d (rest-of-bar onset beats-per-bar))
-			     out))
-		    
-		     ((or (ends-a-beat-p end)
-			  (not (crosses-beats-p d onset))
-			  (and (or (>= d 2)
-				   (= d 1.5))
-			       (zerop (nth-value 1 (truncate onset))))
-			  (and (= d 1) (zerop (mod end .5))))
-      		      ;; ends on the beat, doesn't extend across beats, special cases
-		      (multiple-value-bind (before-tie after-tie)
-			  (int-frac d)
-			(format out " ~a~a~@[~a~]"
-				(note->ly-pitch p)
-				(cond ((= before-tie 8) "\\longa")
-				      ((= before-tie 16) "\\breve")
-				      (t (/ 4 before-tie)))
-				(cond
-				  ;; dot
-				  ((and (= after-tie (/ before-tie 2))
-					(or (not (rest-p p))
-					    (< d 1)))
-				   ".")
-				  ;; tie
-				  ((plusp after-tie)
-				   (format nil "~@[~a~]~a"
-					   (when (not (rest-p p)) "~")
-					   (rhythm-spell (list p)
-							 (list after-tie)
-							 beats-per-bar)))))))
-		     
-		     ;; ties across beats
-		     (t (princ (ties-across-beats p d (rest-of-beat onset))
-			       out)))))))
-
+		
 (defun final-rest (pitches durations &optional (beats-per-bar 4))
   (let ((total (reduce #'+ durations)))
     (if (zerop (mod total beats-per-bar))
