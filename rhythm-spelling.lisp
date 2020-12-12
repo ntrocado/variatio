@@ -42,6 +42,12 @@
 	 (frac-part (- d int-part)))
     (values int-part frac-part)))
 
+(defun metric-subdivision (d)
+  (loop :for i from 1
+	:for sub := (/ 1 i)
+	:minimize sub
+	:until (zerop (mod d sub))))
+
 (defun dots (int-part frac-part)
   (when (plusp frac-part)
     (loop :with d := (+ int-part frac-part)
@@ -87,7 +93,9 @@
 
 		    ;; ties across beats
 		    ((and (crosses-beats-p d onset)
-			  (not (zerop frac-part))
+			  (not (and (zerop frac-part)
+				    (>= (metric-subdivision (nth-value 1 (truncate onset)))
+					(/ d 2))))
 			  (not (and (= d 1) (zerop (mod end .5)))))
 		     (princ (ties p d (rest-of-beat onset) beats-per-bar onset)
 			    out))
