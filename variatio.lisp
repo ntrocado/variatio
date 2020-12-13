@@ -71,10 +71,11 @@
 			      'rest
 			      (+ (char-pitch->value ch)
 				 (text-accidental->value accidental)
-				 (text-octave->value octave (truncate (/ (or (when (numberp (first midi))
-									       (first midi))
-									     60)
-									 12)))))))
+				 (text-octave->value octave
+						     (truncate (/ (or (when (numberp (first midi))
+									(first midi))
+								      60)
+								  12)))))))
 		    midi)
 	      (push (or (parse-float:parse-float dur :junk-allowed t)
 			(or (first durations) 1))
