@@ -63,10 +63,20 @@
 	  (when (not (rest-p p)) "~")
 	  (rhythm-spell (list p) (list (- d tie-from)) beats-per-bar (+ offset tie-from))))
 
-(defun rhythm-spell (pitches durations &optional (beats-per-bar 4) (offset 0))
+(defun min-subdivision-quantize (d subdivision)
+  (loop :for i :by subdivision
+	:while (< i d)
+	:finally (return (if (< (- i d) (/ subdivision 2))
+			     i
+			     (- i subdivision)))))
+
+(defun rhythm-spell (pitches durations
+		     &optional (beats-per-bar 4) (offset 0) (min-subdivision 1/32))
   (with-output-to-string (out)
     (loop :for p :in pitches
-	  :for d :in durations
+	  :for d :in (mapcar (lambda (x)
+			       (min-subdivision-quantize x min-subdivision))
+			     durations)
 	  :for end := d :then (+ end d)
 	  :for onset := offset :then (+ offset (- end d))
 	  :do (multiple-value-bind (int-part frac-part)
