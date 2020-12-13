@@ -154,8 +154,8 @@
 			   :while b
 			   :sum (round (* amount (- b a))) :into s
 			   :collect s)))
-	    (append (list first-pitch)
-		    (loop :for p :in (rest pitches)
+	    (append (subseq pitches 0 (1+ (position-if #'numberp pitches)))
+		    (loop :for p :in (rest (member-if 'numberp pitches))
 			  :if (rest-p p)
 			    :collect p
 			  :else
