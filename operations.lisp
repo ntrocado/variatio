@@ -126,7 +126,7 @@
 
 (defun bookend-mean (pitches durations)
   "Add the mean of PITCHES rounded down to the start and rounded up to the end of PITCHES."
-  (values (let ((mean (alexandria:mean pitches)))
+  (values (let ((mean (alexandria:mean (remove 'rest pitches))))
 	    (append (list (floor mean))
 		    pitches
 		    (list (ceiling mean))))
