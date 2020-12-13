@@ -37,21 +37,23 @@
   "^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$")
 
 (defun parse-to-note (pitch accidental octave previous-notes)
-  (make-instance
-   'note
-   :letter pitch
-   :accidental (alexandria:switch (accidental :test 'string=)
-		 ("bb" :double-flat)
-		 ("b" :flat)
-		 ("s" :sharp)
-		 ("ss" :double-sharp)
-		 (t :natural))
-   :octave (/ (text-octave->value octave
-				  (octave (or (find-if (lambda (x)
-							 (eql (type-of x) 'note))
-						       previous-notes)
-					      (make-instance 'note))))
-	      12)))
+  (if (char= pitch #\r)
+      'rest
+      (make-instance
+       'note
+       :letter pitch
+       :accidental (alexandria:switch (accidental :test 'string=)
+				      ("bb" :double-flat)
+				      ("b" :flat)
+				      ("s" :sharp)
+				      ("ss" :double-sharp)
+				      (t :natural))
+       :octave (/ (text-octave->value octave
+				      (octave (or (find-if (lambda (x)
+							     (eql (type-of x) 'note))
+							   previous-notes)
+						  (make-instance 'note))))
+		  12))))
 
 (defun parse-input (input n &key (return-notes nil))
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
@@ -69,7 +71,8 @@
 			      'rest
 			      (+ (char-pitch->value ch)
 				 (text-accidental->value accidental)
-				 (text-octave->value octave (truncate (/ (or (first midi)
+				 (text-octave->value octave (truncate (/ (or (when (numberp (first midi))
+									       (first midi))
 									     60)
 									 12)))))))
 		    midi)
