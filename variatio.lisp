@@ -86,7 +86,7 @@
   (multiple-value-bind (pitches durations n)
       (parse-input input n :return-notes t)
     (declare (ignore n))
-    (rhythm-spell pitches durations)))
+    (multiple-value-call #'rhythm-spell (final-rest pitches durations))))
 
 ;;; PROCESS
 
