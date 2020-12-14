@@ -103,10 +103,10 @@
 
 		    ;; ties across beats
 		    ((and (crosses-beats-p d onset)
-			  (not (and (zerop frac-part)
-				    (>= (metric-subdivision (nth-value 1 (truncate onset)))
-					(min (/ d 2) 1))))
-			  (not (and (= d 1) (zerop (mod end .5)))))
+			  (<= (metric-subdivision (nth-value 1 (truncate onset)))
+			      (min (/ d 2) 1))
+			  (not (and (= d 1) (zerop (mod end .5))))
+			  (not (and (zerop frac-part) (> d 1))))
 		     (princ (ties p d (rest-of-beat onset) beats-per-bar onset)
 			    out))
 
