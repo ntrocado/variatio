@@ -55,7 +55,7 @@
 						  (make-instance 'note))))
 		  12))))
 
-(defun parse-input (input n &key (return-notes nil))
+(defun parse-input (input &key (return-notes nil))
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
   (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
@@ -80,12 +80,11 @@
 	      (push (or (parse-float:parse-float dur :junk-allowed t)
 			(or (first durations) 1))
 		    durations))
-	:finally (return (values (reverse midi) (reverse durations) n))))
+	:finally (return (values (reverse midi) (reverse durations)))))
 
-(defun original-phrase (input n)
-  (multiple-value-bind (pitches durations n)
-      (parse-input input n :return-notes t)
-    (declare (ignore n))
+(defun original-phrase (input)
+  (multiple-value-bind (pitches durations)
+      (parse-input input :return-notes t)
     (multiple-value-call #'rhythm-spell (final-rest pitches durations))))
 
 ;;; PROCESS
@@ -240,16 +239,17 @@
 			  #+windows "output")
 	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
     (uiop:with-temporary-file (:stream stream :pathname input-file)
-      (format stream *score-template*
-	      (append (list (original-phrase input complexity))
-		      (loop :repeat (1- *variations-n*)
-			    :collect (apply (alexandria:multiple-value-compose
-					     #'make-ly
-					     #'fix-very-short-durations
-					     #'trim
-					     #'process-n
-					     #'parse-input)
-					    (list input (parse-integer complexity))))))
+      (multiple-value-bind (pitches durations)
+	  (parse-input input)
+	(format stream *score-template*
+		(append (list (original-phrase input complexity))
+			(loop :repeat (1- *variations-n*)
+			      :collect (apply (alexandria:multiple-value-compose
+					       #'make-ly
+					       #'fix-very-short-durations
+					       #'trim
+					       #'process-n)
+					      (list pitches durations (parse-integer complexity)))))))
       :close-stream
       (uiop:run-program (list *lilypond*
 			      "-o" output-filename

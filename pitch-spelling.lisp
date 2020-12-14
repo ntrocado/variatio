@@ -206,22 +206,24 @@
 ;;; TODO Still needs optimization...
 (let ((ht (alexandria:copy-hash-table *accidental-init-ht*)))
   (defun parsimony (note &optional reset)
-    (if reset
-	(setf ht (alexandria:copy-hash-table *accidental-init-ht*))
-	(unless (eql (accidental note) (gethash (letter note) ht))
-	  (setf (gethash (letter note) ht) (accidental note))))))
+    (when reset
+      (setf ht *accidental-init-ht*))
+    (unless (eql (accidental note) (gethash (letter note) ht))
+      (setf (gethash (letter note) ht) (accidental note)))))
 
-(defun count-penalties (notes best-score-so-far)
+(defun count-penalties (notes-vec best-score-so-far)
+  ;; (parsimony (aref notes-vec 0))
   (loop :with penalty := 0
-	:initially (parsimony '() t)
-	:for (a b) :on notes
+	:for i :from 1 :below (length notes-vec)
+	:for a := (aref notes-vec (1- i))
+	:for b := (aref notes-vec i)
+	;; :for parsimony := (parsimony b)
 	:do (incf penalty
 		  (case (accidental a)
 		    ((:sharp :flat) 1)
 		    ((:double-sharp :double-flat) 2)
 		    (t 0)))
-	:do (when (parsimony a) (incf penalty 1.2))
-	:while b
+	;; :do (when parsimony (incf penalty 1.2))
 	:do (incf penalty
 		  (case (interval-quality a b)
 		    (:diminished 1.5)
@@ -229,23 +231,24 @@
 		    (:other 8)
 		    (t 0)))
 	:when (>= penalty best-score-so-far) :do (return penalty)
-	:finally (return penalty)))
+	  :finally (return penalty)))
 
 ;; TODO avoid mixing accidentals
 (defun score-spelling (notes best-score-so-far)
-  (count-penalties (remove 'rest notes) best-score-so-far))
+  (count-penalties (coerce (remove 'rest notes) 'vector) best-score-so-far))
 
 ;; TODO needs a better algorithm
 (defun pitch-spell (midi-note-numbers)
   (if (= 1 (length midi-note-numbers))
       (list (first (possible-spellings (car midi-note-numbers))))
-      (loop :with best-score-so-far := (* 3 (length midi-note-numbers))
+      (loop :with best-score-so-far := 0
 	    :with result
 	    :for try :in (apply #'alexandria:map-product
 				#'list
 				(mapcar #'possible-spellings midi-note-numbers))
 	    :for score := (score-spelling try best-score-so-far)
-	    :when (< score best-score-so-far)
+	    :when (or (zerop best-score-so-far)
+		      (< score best-score-so-far))
 	      :do (setf best-score-so-far score)
 	      :and :do (setf result try)
 	    :finally (return result))))
