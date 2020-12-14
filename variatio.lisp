@@ -126,9 +126,11 @@
 (defun process-n (pitches durations n)
   (if (zerop n)
       (values pitches durations)
-      (multiple-value-bind (pitches durations)
+      (multiple-value-bind (new-pitches new-durations)
 	  (process pitches durations)
-	(process-n pitches durations (1- n)))))
+	(if (some #'numberp new-pitches) ; try again if there's only rests
+	    (process-n new-pitches new-durations (1- n))
+	    (process-n pitches durations n)))))
 
 (defun trim (pitches durations &optional (max-len 23))
   "Remove random notes/rests if there are more than MAX-LEN of them."
