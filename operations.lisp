@@ -45,19 +45,20 @@
 				 (push (first durations) new-durations)))))
 
 (defun remove-notes (pitches durations prob)
-  "Randomly remove notes and rests from PITCHES and DURATIONS with probability PROB (between 0 and 1). If all notes are removed, return lists respectively with the pitch and duration of the last original note."
+  "Randomly remove notes and rests from PITCHES and DURATIONS with probability PROB (between 0 and 1). If all notes are removed, return lists respectively with the pitch and duration of the first original note."
   (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
   (loop :for p :in pitches
 	:for d :in durations
 	:unless (< (random 1.0) prob)
 	  :collect p :into new-pitches
 	  :and :collect d :into new-durations
-	:finally (return (if (null new-pitches)
-			     (values (last pitches) (last durations))
+	:finally (return (if (every #'rest-p new-pitches)
+			     (let ((pos (position-if #'numberp pitches)))
+			       (values (list (elt pitches pos)) (list (elt durations pos))))
 			     (values new-pitches new-durations)))))
 
 (defun insert-rests (pitches durations prob)
-  "Randomly insert rests with probability PROB (between 0 and 1). The duration each inserted rest repeats another existing note or rest."
+  "Randomly insert rests with probability PROB (between 0 and 1). The duration of each inserted rest repeats another existing note or rest."
   (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
   (loop :for p :in pitches
 	:for d :in durations
@@ -70,9 +71,29 @@
 	  :and :collect d :into new-durations
 	:finally (return (values new-pitches new-durations))))
 
+(defun insert-pedal (pitches durations prob place)
+  "Insert a pedal note after other notes/rests with probability PROB. PLACE is either :top, :mean or :bottom, and indicates if the new note is the highest, mean or lowest of PITCHES. The duration for each new note is picked at random from existing DURATIONS."
+  (assert (<= 0 prob 1) (prob) "PROB must be between 0 and 1, but ~a was given." prob)
+  (let* ((no-rests (remove 'rest pitches))
+	 (pedal-note (case place
+		       (:top (apply #'max no-rests))
+		       (:mean (round (alexandria:mean no-rests)))
+		       (:bottom (apply #'min no-rests)))))
+    (loop :for p :in pitches
+	  :for d :in durations
+	  :if (< (random 1.0) prob)
+	    :append (list p pedal-note) :into new-pitches
+	    :and :append (list (alexandria:random-elt durations) d)
+		   :into new-durations
+	  :else
+	    :collect p :into new-pitches
+	    :and :collect d :into new-durations
+	  :finally (return (values new-pitches new-durations)))))
+
 (defun rotate (pitches durations)
-  (values (alexandria:rotate pitches)
-	  (alexandria:rotate durations)))
+  (let ((n (random (length pitches))))
+    (values (alexandria:rotate pitches n)
+	    (alexandria:rotate durations n))))
 
 (defun augment (pitches durations &optional (by 2))
   (values pitches (mapcar (lambda (x) (* x by)) durations)))
@@ -115,14 +136,17 @@
 			      (alexandria:clamp d (* min 2) max))
 			    durations))))
 
-(defun octave-shift (pitches durations prob)
+(defun interval-shift (pitches durations prob interval)
   (values (mapcar (lambda (x)
 		    (if (and (< (random 1.0) prob)
 			     (not (rest-p x)))
-			(funcall (alexandria:random-elt '(+ -)) x 12)
+			(funcall (alexandria:random-elt '(+ -)) x interval)
 			x))
 		  pitches)
 	  durations))
+
+(defun octave-shift (pitches durations prob)
+  (interval-shift pitches durations prob 12))
 
 (defun bookend-mean (pitches durations)
   "Add the mean of PITCHES rounded down to the start and rounded up to the end of PITCHES."
@@ -161,3 +185,5 @@
 			  :else
 			    :collect (+ first-pitch (pop mv)))))
 	  durations))
+
+

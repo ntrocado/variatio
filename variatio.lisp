@@ -107,12 +107,16 @@
 					    (+ .1 (random .5))))
 		 (list #'insert-rests (list pitches durations
 					    (+ .1 (random .4))))
+		 (list #'insert-pedal (list pitches durations
+					    (+ .2 (random .5))
+					    (alexandria:random-elt '(:top :mean :bottom))))
 		 (list #'rotate (list pitches durations))
-		 (list #'augment (list pitches durations (if (> (random 1.0) .75)
+		 (list #'augment (list pitches durations (if (> (random 1.0) .5)
 							     2
-							     (alexandria:random-elt '(1.5 2.5 3)))))
+							     (alexandria:random-elt '(1.5 3)))))
 		 (list #'rhythm-flatten (list pitches durations))
 		 (list #'rhythm-raise-floor (list pitches durations))
+		 (list #'interval-shift (list pitches durations .4 (1+ (random 13))))
 		 (list #'octave-shift (list pitches durations .3))
 		 (list #'bookend-mean (list pitches durations))
 		 (list #'bookend-over-ambitus (list pitches durations))
