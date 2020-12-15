@@ -229,7 +229,7 @@
   }
   ~}")
 
-(defparameter *variations-n* 10)
+(defparameter *variations-n* 18)
 
 (hunchentoot:define-easy-handler (root :uri "/") (input complexity)
   (setf (hunchentoot:content-type*) "application/pdf")
@@ -242,7 +242,7 @@
       (multiple-value-bind (pitches durations)
 	  (parse-input input)
 	(format stream *score-template*
-		(append (list (original-phrase input))
+		(append (list (original-phrase input complexity))
 			(loop :repeat (1- *variations-n*)
 			      :collect (apply (alexandria:multiple-value-compose
 					       #'make-ly
