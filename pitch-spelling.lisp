@@ -269,8 +269,9 @@
 
 ;; Cheat by spliting the input list in two
 (defun pitch-spell-split (midi-note-numbers &optional (len 8))
-  (if (< (length midi-note-numbers) len)
-      (pitch-spell midi-note-numbers)
-      (append (pitch-spell (subseq midi-note-numbers 0 len))
-	      (pitch-spell-split (subseq midi-note-numbers len)))))
+  (cond ((null midi-note-numbers) nil)
+	((< (length midi-note-numbers) len)
+	 (pitch-spell midi-note-numbers))
+	(t (append (pitch-spell (subseq midi-note-numbers 0 len))
+		   (pitch-spell-split (subseq midi-note-numbers len))))))
 

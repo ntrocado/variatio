@@ -242,7 +242,7 @@
       (multiple-value-bind (pitches durations)
 	  (parse-input input)
 	(format stream *score-template*
-		(append (list (original-phrase input complexity))
+		(append (list (original-phrase input))
 			(loop :repeat (1- *variations-n*)
 			      :collect (apply (alexandria:multiple-value-compose
 					       #'make-ly
