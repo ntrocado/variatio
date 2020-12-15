@@ -92,8 +92,8 @@
 
 (defun rotate (pitches durations)
   (let ((n (random (length pitches))))
-    (values (alexandria:rotate pitches n)
-	    (alexandria:rotate durations n))))
+    (values (alexandria:rotate (copy-seq pitches) n)
+	    (alexandria:rotate (copy-seq durations) n))))
 
 (defun augment (pitches durations &optional (by 2))
   (values pitches (mapcar (lambda (x) (* x by)) durations)))
