@@ -3,8 +3,8 @@
 
 (defvar *acceptor* nil)
 
-(setf hunchentoot:*show-lisp-errors-p* t
-      hunchentoot:*show-lisp-backtraces-p* t)
+(setf hunchentoot:*show-lisp-errors-p* nil
+      hunchentoot:*show-lisp-backtraces-p* nil)
 
 (defun initialize-application (&key port)
   (setf hunchentoot:*dispatch-table*
