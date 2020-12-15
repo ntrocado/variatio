@@ -265,10 +265,12 @@
 	      :and :do (setf result try)
 	    :finally (return result))))
 
+
+
 ;; Cheat by spliting the input list in two
 (defun pitch-spell-split (midi-note-numbers &optional (len 8))
   (if (< (length midi-note-numbers) len)
       (pitch-spell midi-note-numbers)
-      (append (pitch-spell midi-note-numbers)
-	      (pitch-spell-split (subseq midi-note-numbers (1- len))))))
+      (append (pitch-spell (subseq midi-note-numbers 0 len))
+	      (pitch-spell-split (subseq midi-note-numbers len)))))
 
