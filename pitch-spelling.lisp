@@ -89,14 +89,17 @@
 	      (+ (* (octave note1) 7) (letter-value (letter note1)))))))
 
 (defun interval-in-semitones (note1 note2)
-  (abs (- (note->midi-note-number note1)
-	  (note->midi-note-number note2))))
+  (- (note->midi-note-number note2)
+     (note->midi-note-number note1)))
+
+(defun abs-interval-in-semitones (note1 note2)
+  (abs (interval-in-semitones note1 note2)))
 
 (defun major-or-perfect-interval-size (interval-number)
   (nth (mod (1- interval-number) 7) '(0 2 4 5 7 9 11)))
 
 (defun distance-from-major-or-perfect (note1 note2)
-  (- (mod (interval-in-semitones note1 note2) 12)
+  (- (mod (abs-interval-in-semitones note1 note2) 12)
      (major-or-perfect-interval-size (interval-number note1 note2))))
 
 (let ((previous-results (make-hash-table :test 'equal)))
@@ -213,23 +216,33 @@
 
 (defun count-penalties (notes-vec best-score-so-far)
   ;; (parsimony (aref notes-vec 0))
-  (loop :with penalty := 0
+  (loop :with penalty := (case (accidental (aref notes-vec 0))
+			   ((:sharp :flat) 1)
+			   ((:double-sharp :double-flat) 2.5)
+			   (t 0))
 	:for i :from 1 :below (length notes-vec)
 	:for a := (aref notes-vec (1- i))
 	:for b := (aref notes-vec i)
+	:for interval := (interval-in-semitones a b)
 	;; :for parsimony := (parsimony b)
 	:do (incf penalty
-		  (case (accidental a)
+		  (case (accidental b)
 		    ((:sharp :flat) 1)
-		    ((:double-sharp :double-flat) 2)
+		    ((:double-sharp :double-flat) 2.5)
 		    (t 0)))
-	;; :do (when parsimony (incf penalty 1.2))
-	:do (incf penalty
-		  (case (interval-quality a b)
-		    (:diminished 1.5)
-		    (:augmented 1.4)
-		    (:other 8)
-		    (t 0)))
+	    ;; :do (when parsimony (incf penalty 1.2))
+	:do (cond ((or (and (= 1 interval)
+			    (eql (accidental b) :flat))
+		       (and (= -1 interval)
+			    (eql (accidental b) :sharp)))
+		   (incf penalty 1.6))
+		  ((> (abs interval) 1)
+		   (incf penalty
+			 (case (interval-quality a b)
+			   (:diminished 1.5)
+			   (:augmented 1.4)
+			   (:other 8)
+			   (t 0)))))
 	:when (>= penalty best-score-so-far) :do (return penalty)
 	  :finally (return penalty)))
 
@@ -237,26 +250,25 @@
 (defun score-spelling (notes best-score-so-far)
   (count-penalties (coerce (remove 'rest notes) 'vector) best-score-so-far))
 
-;; TODO needs a better algorithm
+;; TODO needs a more efficient algorithm. maybe
 (defun pitch-spell (midi-note-numbers)
   (if (= 1 (length midi-note-numbers))
       (list (first (possible-spellings (car midi-note-numbers))))
-      (loop :with best-score-so-far := 0
+      (loop :with best-score-so-far := 1000
 	    :with result
 	    :for try :in (apply #'alexandria:map-product
 				#'list
 				(mapcar #'possible-spellings midi-note-numbers))
 	    :for score := (score-spelling try best-score-so-far)
-	    :when (or (zerop best-score-so-far)
-		      (< score best-score-so-far))
+	    :when (< score best-score-so-far)
 	      :do (setf best-score-so-far score)
 	      :and :do (setf result try)
 	    :finally (return result))))
 
 ;; Cheat by spliting the input list in two
-(defun pitch-spell-split (midi-note-numbers)
-  (if (< (length midi-note-numbers) 8)
+(defun pitch-spell-split (midi-note-numbers &optional (len 8))
+  (if (< (length midi-note-numbers) len)
       (pitch-spell midi-note-numbers)
-      (let ((clen (ceiling (/ (length midi-note-numbers) 2))))
-	(append (pitch-spell (subseq midi-note-numbers 0 clen))
-		(pitch-spell (subseq midi-note-numbers clen))))))
+      (append (pitch-spell midi-note-numbers)
+	      (pitch-spell-split (subseq midi-note-numbers (1- len))))))
+
