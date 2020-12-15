@@ -121,11 +121,15 @@
   "Re-scale DURATIONS reducing the range between the shortest and longest values."
   (let* ((min (apply #'min durations))
 	 (max (apply #'max durations))
-	 (halfway (/ (- max min) 4)))
+	 (halfway (/ (- max min) 4))
+	 (min-subdivision (/ (apply #'min (mapcar #'metric-subdivision durations))
+			     2)))
     (values pitches (mapcar (lambda (d)
-			      (scale-value d min max
-					   (+ min halfway)
-					   (- max halfway)))
+			      (min-subdivision-quantize
+			       (scale-value d min max
+					    (+ min halfway)
+					    (- max halfway))
+			       min-subdivision))
 			    durations))))
 
 (defun rhythm-raise-floor (pitches durations)

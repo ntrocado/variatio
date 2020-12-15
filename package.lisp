@@ -11,7 +11,9 @@
 (defpackage #:rhythm-spelling
   (:use #:cl)
   (:import-from #:pitch-spelling rest-p)
-  (:export rhythm-spell))
+  (:export metric-subdivision
+	   min-subdivision-quantize
+	   rhythm-spell))
 
 (defpackage #:variatio
   (:use #:cl #:pitch-spelling #:rhythm-spelling)
