@@ -230,34 +230,39 @@
   ~}")
 
 (defparameter *variations-n* 18)
+(defparameter *frontend-uri* "https://nunotrocado.com/software/variatio.html")
 
 (hunchentoot:define-easy-handler (root :uri "/") (input complexity)
   (setf (hunchentoot:content-type*) "application/pdf")
-  (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
-				      "/app/output"
-				      "output")
-			  #+windows "output")
-	 (output-file (make-pathname :type "pdf" :defaults output-filename)))
-    (uiop:with-temporary-file (:stream stream :pathname input-file)
-      (multiple-value-bind (pitches durations)
-	  (parse-input input)
-	(format stream *score-template*
-		(append (list (original-phrase input))
-			(loop :repeat (1- *variations-n*)
-			      :collect (apply (alexandria:multiple-value-compose
-					       #'make-ly
-					       #'fix-very-short-durations
-					       #'trim
-					       #'process-n)
-					      (list pitches durations (parse-integer complexity)))))))
-      :close-stream
-      (uiop:run-program (list *lilypond*
-			      "-o" output-filename
-			      "-I" "static/"
-			      "-I" "/app/static/"
-			      (namestring input-file))
-			:output #p"~/ly.log"
-			:error-output #p"~/ly-error.log"))
-    (prog1
-	(alexandria:read-file-into-byte-vector output-file)
-      (uiop:delete-file-if-exists output-file))))
+  (if input
+      (let* ((output-filename #+linux (if (uiop:directory-exists-p "/app/")
+					  "/app/output"
+					  "output")
+			      #+windows "output")
+	     (output-file (make-pathname :type "pdf" :defaults output-filename)))
+	(uiop:with-temporary-file (:stream stream :pathname input-file)
+	  (multiple-value-bind (pitches durations)
+	      (parse-input input)
+	    (format stream *score-template*
+		    (append (list (original-phrase input))
+			    (loop :repeat (1- *variations-n*)
+				  :collect (apply (alexandria:multiple-value-compose
+						   #'make-ly
+						   #'fix-very-short-durations
+						   #'trim
+						   #'process-n)
+						  (list pitches durations (parse-integer complexity)))))))
+	  :close-stream
+	  (uiop:run-program (list *lilypond*
+				  "-o" output-filename
+				  "-I" "static/"
+				  "-I" "/app/static/"
+				  (namestring input-file))
+			    :output #p"~/ly.log"
+			    :error-output #p"~/ly-error.log"))
+	(prog1
+	    (alexandria:read-file-into-byte-vector output-file)
+	  (uiop:delete-file-if-exists output-file)))
+
+      ;; redirect when no input
+      (hunchentoot:redirect *frontend-uri*)))
