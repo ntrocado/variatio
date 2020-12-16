@@ -55,31 +55,33 @@
 						  (make-instance 'note))))
 		  12))))
 
+(define-condition malformed-input-error (error)
+  ((input :initarg :input :reader input)))
+
 (defun parse-input (input &key (return-notes nil))
   "Parse text in INPUT format into a list of midi note values and a list of durations as fractions/multiples of a beat. Octaves are relative to the first one."
-  (assert (stringp input) (input) "INPUT must be a string. ~a was provided" input)
   (loop :with midi
 	:with durations
 	:for note :in (ppcre:split "\\s" input)
-;;; TODO Error handling
-	:do (ppcre:register-groups-bind (pitch accidental octave dur)
-		(*input-regex* note)
-	      (push (alexandria:when-let (ch (character pitch))
-		      (if return-notes
-			  (parse-to-note ch accidental octave midi)
-			  (if (char= ch #\r)
-			      'rest
-			      (+ (char-pitch->value ch)
-				 (text-accidental->value accidental)
-				 (text-octave->value octave
-						     (truncate (/ (or (when (numberp (first midi))
-									(first midi))
-								      60)
-								  12)))))))
-		    midi)
-	      (push (or (parse-float:parse-float dur :junk-allowed t)
-			(or (first durations) 1))
-		    durations))
+	:do (or (ppcre:register-groups-bind (pitch accidental octave dur)
+		    (*input-regex* note)
+		  (push (alexandria:when-let (ch (character pitch))
+			  (if return-notes
+			      (parse-to-note ch accidental octave midi)
+			      (if (char= ch #\r)
+				  'rest
+				  (+ (char-pitch->value ch)
+				     (text-accidental->value accidental)
+				     (text-octave->value octave
+							 (truncate (/ (or (when (numberp (first midi))
+									    (first midi))
+									  60)
+								      12)))))))
+			midi)
+		  (push (or (parse-float:parse-float dur :junk-allowed t)
+			    (or (first durations) 1))
+			durations))
+		(error 'malformed-input-error :input note))
 	:finally (return (values (reverse midi) (reverse durations)))))
 
 (defun original-phrase (input)
