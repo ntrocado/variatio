@@ -1,1 +1,5 @@
-This is still a work-in-progress for a web app that generates variations from a given initial musical phrase. The input uses a textual mini-language. The user is offered a pdf score with the results. Written in Common Lisp, and (at least for now) hosted on Heroku.
+# Variatio
+
+Lives here: [http://variatio.nunotrocado.com/](http://variatio.nunotrocado.com/)
+
+A web app that generates variations from a given initial musical phrase. A textual mini-language is defined for the input. The variations are obtained from a series of algorithmic transformations. The user is then offered a pdf score with the results. Written in Common Lisp, uses [Lilypond](http://lilypond.org/) for the engraving, deployed on [Heroku](https://www.heroku.com/).
