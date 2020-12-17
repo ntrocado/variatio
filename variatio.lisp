@@ -2,6 +2,32 @@
 
 ;;; INPUT
 
+;;; The input syntax is as follows:
+;;;
+;;; - Notes are separated by spaces.
+;;; - Each note starts with a pitch letter (a-g), or r for a rest.
+;;; - Add s for sharp, b for flat (eg, cs is C-sharp, bb is B-flat).
+;;; - Add one or more quotes (') to indicate octaves above middle C, commas (,) indicate octaves
+;;;   below middle C. For example: c' is the C above middle C (C5, as it is also usually called)
+;;;   ab,, is the A-flat two octaves below middle C (A3).
+;;; - Add the rhythmic value in number of beats. Examples: c1 is a quarter-note C; d.5 is an
+;;;   eighth-note D (.5=half a beat); e1.75 is a double-dotted
+;;;   quarter-note E, or a quarter-note tied to a dotted eight-note… (the exact notation is set
+;;;   by the computer); fs4 is a whole-note F-sharp.
+;;; - One more thing about octaves: all the octaves are relative to the first note. If you type
+;;;   g,,1 a1 b1 c,1, the first three notes are two octaves below middle-C, and the last one one
+;;;   octave below (G3 A3 B3 C4).
+;;; - One more thing about rhythms: If you don't indicate a rhythmic value, the preceding one is
+;;;   assumed. So you could write the last example like this: g,,1 a b c'.
+;;;
+;;; Some more examples of valid phrases:
+;;;
+;;; f1 r.5 f'1 d'.5 e'1 (Moose The Mooche)
+;;; r.5 g g g eb2 r.5 f f f d2 (Beethoven's fifth)
+;;; d2 a f d cs d1 e f2.5 g.5 f e d1 (Bach's Art of the Fugue)
+;;; cs'.5 e gs b as1.5 gs.5 fs ds b,1 (Coltrane's solo on Giant Steps)
+;;; d.5 e f g e1 c.5 d1.5 (The Lick)
+
 (defun char-pitch->value (pitch)
   "Parse the char PITCH, returning 0 for C, 2 for D, upto 11 for B."
   (case pitch
@@ -27,6 +53,7 @@
     (t 0)))
 
 (defun text-octave->value (octave &optional (default 4))
+  "Parse the string OCTAVE, counting quotes and commas to return the corresponding base number in midi notes."
   (* (if octave
 	 (+ default (- (count #\' octave)
 		       (count #\, octave)))
@@ -37,6 +64,7 @@
   "^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$")
 
 (defun parse-to-note (pitch accidental octave previous-notes)
+  "Make a note object."
   (if (char= pitch #\r)
       'rest
       (make-instance
@@ -85,15 +113,16 @@
 	:finally (return (values (reverse midi) (reverse durations)))))
 
 (defun original-phrase (input)
+  "Parse the input phrase, respecting the note spelling already chosen by the user."
   (multiple-value-bind (pitches durations)
       (parse-input input :return-notes t)
     (multiple-value-call #'rhythm-spell (final-rest pitches durations))))
 
+
 ;;; PROCESS
 
 (defun process (pitches durations)
-  (let ((op
-	  (alexandria:random-elt
+  (let ((op (alexandria:random-elt
 	   (list (list #'reverse-pitches
 		       (list pitches durations))
 		 (list #'reverse-rhythms
@@ -112,16 +141,20 @@
 					    (+ .2 (random .5))
 					    (alexandria:random-elt '(:top :mean :bottom))))
 		 (list #'rotate (list pitches durations))
-		 (list #'augment (list pitches durations (if (> (random 1.0) .5)
-							     2
-							     (alexandria:random-elt '(1.5 3)))))
+		 (list #'augment (list pitches durations
+				       (if (> (random 1.0) .5)
+					   2
+					   (alexandria:random-elt '(1.5 3)))))
 		 (list #'rhythm-flatten (list pitches durations))
 		 (list #'rhythm-raise-floor (list pitches durations))
-		 (list #'interval-shift (list pitches durations .4 (1+ (random 13))))
-		 (list #'octave-shift (list pitches durations .3))
+		 (list #'interval-shift (list pitches durations
+					      .4 (1+ (random 13))))
+		 (list #'octave-shift (list pitches durations
+					    .3))
 		 (list #'bookend-mean (list pitches durations))
 		 (list #'bookend-over-ambitus (list pitches durations))
-		 (list #'mv-expand-compress (list pitches durations (+ .1 (random 2.4))))))))
+		 (list #'mv-expand-compress (list pitches durations
+						  (+ .1 (random 2.4))))))))
     (apply (first op) (second op))))
 
 (defun process-n (pitches durations n)
@@ -144,9 +177,11 @@
 		(remove-nth-element durations rand-elt))))))
 
 (defun fix-very-short-durations (pitches durations)
+  "If there are durations smaller than a 32th note, double all of them. This is a solution to a limitation of Lilypond, that can't render such short notes unless they are part of a beamed group. They would be very unwieldy to read, anyway."
   (if (find-if (lambda (x) (< x 1/32)) durations)
       (fix-very-short-durations pitches (mapcar (lambda (x) (* x 2)) durations))
       (values pitches durations)))
+
 
 ;;; OUTPUT
 
@@ -199,6 +234,7 @@
   "r")
 		
 (defun final-rest (pitches durations &optional (beats-per-bar 4))
+  "Fills up the last bar with rests."
   (let ((total (reduce #'+ durations)))
     (if (zerop (mod total beats-per-bar))
 	(values pitches durations)
