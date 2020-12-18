@@ -14,8 +14,8 @@
 ;;;   eighth-note D (.5=half a beat); e1.75 is a double-dotted
 ;;;   quarter-note E, or a quarter-note tied to a dotted eight-note… (the exact notation is set
 ;;;   by the computer); fs4 is a whole-note F-sharp.
-;;; - One more thing about octaves: all the octaves are relative to the first note. If you type
-;;;   g,,1 a1 b1 c,1, the first three notes are two octaves below middle-C, and the last one one
+;;; - One more thing about octaves: they are all relative to the first note. If you type
+;;;   g,,1 a1 b1 c1' the first three notes are two octaves below middle-C, and the last one one
 ;;;   octave below (G3 A3 B3 C4).
 ;;; - One more thing about rhythms: If you don't indicate a rhythmic value, the preceding one is
 ;;;   assumed. So you could write the last example like this: g,,1 a b c'.
@@ -52,7 +52,9 @@
     ("bb" -2)
     (t 0)))
 
-(defun text-octave->value (octave &optional (default 4))
+(defparameter *default-octave* 4)
+
+(defun text-octave->value (octave &optional (default *default-octave*))
   "Parse the string OCTAVE, counting quotes and commas to return the corresponding base number in midi notes."
   (* (if octave
 	 (+ default (- (count #\' octave)
@@ -60,11 +62,15 @@
 	 default)
      12))
 
+(defun find-default-octave (pitches)
+  (alexandria:when-let (first-note (find-if #'numberp pitches :from-end t))
+    (truncate (/ first-note 12))))
+
 (defparameter *input-regex*
   "^([cdefgabr])(ss|s\\+|s|\\+|-|b|b-|bb)?('+|,+)?(\\d*\\.?\\d*)?$")
 
 (defun parse-to-note (pitch accidental octave previous-notes)
-  "Make a note object."
+  "Make a note object from args in input format."
   (if (char= pitch #\r)
       'rest
       (make-instance
@@ -79,7 +85,8 @@
        :octave (/ (text-octave->value octave
 				      (octave (or (find-if (lambda (x)
 							     (eql (type-of x) 'note))
-							   previous-notes)
+							   previous-notes
+							   :from-end t)
 						  (make-instance 'note))))
 		  12))))
 
@@ -91,6 +98,7 @@
   (loop :with midi
 	:with durations
 	:for note :in (ppcre:split "\\s" input)
+	:for first-octave := (or first-octave (find-default-octave midi))
 	:do (or (ppcre:register-groups-bind (pitch accidental octave dur)
 		    (*input-regex* note)
 		  (push (alexandria:when-let (ch (character pitch))
@@ -101,10 +109,8 @@
 				  (+ (char-pitch->value ch)
 				     (text-accidental->value accidental)
 				     (text-octave->value octave
-							 (truncate (/ (or (when (numberp (first midi))
-									    (first midi))
-									  60)
-								      12)))))))
+							 (or first-octave
+							     *default-octave*))))))
 			midi)
 		  (push (or (parse-float:parse-float dur :junk-allowed t)
 			    (or (first durations) 1))
