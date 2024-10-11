@@ -17,4 +17,5 @@
 
 (defpackage #:variatio
   (:use #:cl #:pitch-spelling #:rhythm-spelling)
-  (:export note->ly-pitch))
+  (:export note->ly-pitch
+	   #:main))

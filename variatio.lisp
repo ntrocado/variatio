@@ -260,8 +260,8 @@
 				   durations)))
 
 (defparameter *lilypond*
-  #+windows "C:/Program Files (x86)/LilyPond/usr/bin/lilypond.exe"
-  #+linux "/app/.apt/usr/bin/lilypond.real")
+  #+windows "C:/Program Files/lilypond/lilypond-2.24.1/bin/lilypond.exe"
+  #+linux "lilypond")
 
 (defparameter *score-template*
   "
@@ -310,3 +310,43 @@
 
       ;; redirect when no input
       (hunchentoot:redirect *frontend-uri*)))
+
+;;;
+
+(defvar *acceptor* nil)
+
+(setf hunchentoot:*show-lisp-errors-p* nil
+      hunchentoot:*show-lisp-backtraces-p* nil)
+
+(defun initialize-application (&key port)
+  (setf hunchentoot:*dispatch-table*
+    `(hunchentoot:dispatch-easy-handlers
+       ,(hunchentoot:create-folder-dispatcher-and-handler
+          "/" "/static/")))
+
+  (when *acceptor*
+    (hunchentoot:stop *acceptor*))
+
+  (setf *acceptor*
+    (hunchentoot:start (make-instance 'hunchentoot:easy-acceptor :port port))))
+
+(defun main ()
+  (handler-case
+      (progn
+        (initialize-application :port 9003) ;; our start-app, for example clack:clack-up
+        ;; let the webserver run,
+        ;; keep the server thread in the foreground:
+        ;; sleep for ± a hundred billion years.
+        (sleep most-positive-fixnum))
+
+    ;; Catch a user's C-c
+    (#+sbcl sb-sys:interactive-interrupt
+	    #+ccl  ccl:interrupt-signal-condition
+	    #+clisp system::simple-interrupt-condition
+	    #+ecl ext:interactive-interrupt
+	    #+allegro excl:interrupt-signal
+	    () (progn
+		 (format *error-output* "Aborting.~&")
+		 (hunchentoot:stop *acceptor*)
+		 (uiop:quit)))
+    (error (c) (format t "Woops, an unknown error occured:~&~a~&" c))))

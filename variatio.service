@@ -1,0 +1,11 @@
+[Unit]
+Description=Variatio app
+
+[Service]
+WorkingDirectory=/home/ntrocado/
+ExecStart=/home/ntrocado/variatio
+Type=simple
+Restart=on-failure
+
+[Install]
+WantedBy=network.target

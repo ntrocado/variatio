@@ -6,7 +6,6 @@
   :serial t
   :depends-on (#:alexandria #:hunchentoot #:cl-who #:cl-ppcre #:parse-float)
   :components ((:file "package")
-               (:file "heroku")
 	       (:file "pitch-spelling")
 	       (:file "rhythm-spelling")
 	       (:file "operations")
