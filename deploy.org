@@ -1,0 +1,23 @@
+* on server
+sudo apt install lilypond nginx
+mkdir static
+
+* local
+- run make
+- copy variatio executable to server
+- copy variatio.nunotrocado.com.conf to /etc/nginx/sites-enabled
+- copy variatio.service to /etc/systemd/system
+- copy static/template.ly to ~/static
+
+* server
+- chmod +x ./variatio
+- sudo nginx -s reload
+- sudo systemctl start variatio
+- sudo systemctl enable variatio
+
+* can't find ssl dynamic lib error
+- sudo cp /usr/lib/x86_64-linux-gnu/libssl.so /usr/lib/x86_64-linux-gnu/libssl.so.1.1
+- sudo cp /usr/lib/x86_64-linux-gnu/libcrypt.so.1.1.0 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
+** maybe better (next time?)
+- use https://github.com/Shinmera/deploy and package the binary with the foreign libraries;
+- or install sbcl and quicklisp on the server and compile there
